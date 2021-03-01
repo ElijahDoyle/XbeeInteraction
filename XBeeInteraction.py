@@ -5,11 +5,11 @@ import serial
 import time
 
 # intitiallizes the serial object with the connected XBee (the filepath may change depending on the port used)
-ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=10)
+ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=5) 
 
 def sendMessage(message, serialObject):
 	bytesSent = serialObject.write(message.encode('utf-8'))
-
+	print(bytesSent)
 
 # this function retrieves the current parameters from the database
 def get_parameters():
@@ -314,26 +314,71 @@ def handleResponse(response):
 				update_status("IBC Temperature", status)
 
 
-testResponseZ = "1 h:.45 a:70.5 f:71.5 b:69.5 m:70.5 o:68.9 g:65.4 p:100.5 w:95.5 ~"
-testResponse = "2 c:1.50 t:45.50 F:0 W:0 C:0 s:0 1:0 2:0 3:0 I:0 S:0 T:0 D:0 d:0 B:0 b:0 i:0 ~"
-print(testResponse.split(" "))
-handleResponse(testResponseZ)
+#================================  TESTING CODE  ===============
+
+#testResponseZ = "1 h:.45 a:70.5 f:71.5 b:69.5 m:70.5 o:68.9 g:65.4 p:100.5 w:95.5 ~"
+#testResponse = "2 c:1.50 t:45.50 F:0 W:0 C:0 s:0 1:0 2:0 3:0 I:0 S:0 T:0 D:0 d:0 B:0 b:0 i:0 ~"
+#print(testResponse.split(" "))
+#handleResponse(testResponseZ)
 
 
 #message = createRequest(2)
 #print((message))
 #sendMessage(message, ser)
+
 #print(update_status("Fertilizer Tub", "Needs Maintenance", True))
 
-listening = False
-while listening:
-	incoming = ser.read_until("~".encode('utf-8'))
-	if len(message) > 1:
-		response = str(incoming.decode())
-		responses = response.split(" ")
-		for r in responses:
-			print(r)
-		listening = False
+
+#listening = True
+#while listening:
+#	incoming = ser.read_until("~".encode('utf-8'))
+#	if len(incoming) > 1:
+#		response = str(incoming.decode())
+#		handleResponse(response)
+#		responses = response.split(" ")
+#		for r in responses:
+#			print(r)
+#		print(response)
+#		listening = False
+
 #print(update_status("Water Tub", "Operational"))
 #print(insert_env_data("inside_temperature", 63))
 #print(get_status("Pump3"))
+
+#================================  MAIN LOOP  =================
+
+# the cycles variable will keep track of how many cycles have been made since the last database update
+cylces = 0
+# the database will be updated after *this* many cycles
+updateDelay = 90
+
+# this variable keeps the loop running
+running = True
+while running:
+
+	# request/response handling of zach's arduino
+	request1 = createRequest(1)
+	sendMessage(request1, ser)
+	if cycles >= updateDelay:
+		incoming = ser.read_until("~".encode('utf-8'))
+		response1 = str(incoming.decode())
+		handleResponse(response1)
+
+	# wait 5 seconds after
+	time.sleep(5)
+
+	# request/response handling of matt's arduino
+	request2 = createRequest(2)
+	sendMessage(request2, ser)
+	if cycles >= updateDelay:
+		incoming = ser.read_until("~".encode('utf-8'))
+		response2 = str(incoming.decode())
+		handleResponse(response2)
+
+	# wait another 5 seconds
+	time.sleep(5)
+	if cycles >= updateDelay:
+		cycles = 0
+	else:
+		cycles += 1
+	# this cycle has finished and the loop will go again
