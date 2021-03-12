@@ -4,14 +4,16 @@ from datetime import datetime
 import serial
 import time
 
+time.sleep(5)
+
 # intitiallizes the serial object with the connected XBee (the filepath may change depending on the port used)
-ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=5) 
+ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=10)
 
 def sendMessage(message, serialObject):
 	bytesSent = serialObject.write(message.encode('utf-8'))
-	print(bytesSent)
+#	print(bytesSent)
 
-# this function retrieves the current parameters from the database
+#this function retrieves the current parameters from the database
 def get_parameters():
 	conn = None
 	data = {}
@@ -28,6 +30,7 @@ def get_parameters():
 
 	except Error as e:
 		print(e)
+		return(e)
 
 	finally:
 		conn.close()
@@ -190,14 +193,14 @@ def handleResponse(response):
 				insert_env_data("ground_temp", "temperature", data)
 			# mulch temperature
 			elif r[0] == "p":
-				data = r[2:0]
+				data = r[2:]
 				insert_env_data("mulch_temperature", "temperature", data)
 			# mulch water temperature
 			elif r[0] == "w":
 				data = r[2:]
 				insert_env_data("mulch_water_temp", "temperature", data)
 
-	elif response[0]== "2":
+	elif response[0] == "2":
 		responses = response.split(" ")
 		for r in responses:
 			# electrical conductivity
@@ -329,17 +332,17 @@ def handleResponse(response):
 #print(update_status("Fertilizer Tub", "Needs Maintenance", True))
 
 
-#listening = True
-#while listening:
-#	incoming = ser.read_until("~".encode('utf-8'))
-#	if len(incoming) > 1:
-#		response = str(incoming.decode())
+listening = False
+while listening:
+	incoming = ser.read_until("~".encode('utf-8'))
+	if len(incoming) > 1:
+		response = str(incoming.decode())
 #		handleResponse(response)
 #		responses = response.split(" ")
 #		for r in responses:
 #			print(r)
-#		print(response)
-#		listening = False
+		print(response)
+		listening = False
 
 #print(update_status("Water Tub", "Operational"))
 #print(insert_env_data("inside_temperature", 63))
@@ -348,37 +351,65 @@ def handleResponse(response):
 #================================  MAIN LOOP  =================
 
 # the cycles variable will keep track of how many cycles have been made since the last database update
-cylces = 0
+cycles = 0
 # the database will be updated after *this* many cycles
-updateDelay = 90
+updateDelay = 20
 
 # this variable keeps the loop running
 running = True
 while running:
+	ser.flushInput()
+	ser.flushOutput()
 
 	# request/response handling of zach's arduino
-	request1 = createRequest(1)
+	request1 = createRequest(1) #change back to oa 1
 	sendMessage(request1, ser)
-	if cycles >= updateDelay:
-		incoming = ser.read_until("~".encode('utf-8'))
-		response1 = str(incoming.decode())
+	print(request1)
+	incoming = ser.read_until("~".encode('utf-8'))
+	response1 = str(incoming.decode())
+#	print(response1)
+	if response1 == "":
+		print("empty")
+		empty = True
+	else:
+		print(response1)
+		empty = False
+	if not empty and cycles==0 and response1[0] == "1" :
+		print("updating")
 		handleResponse(response1)
 
 	# wait 5 seconds after
+	ser.flushInput()
+	ser.flushOutput()
 	time.sleep(5)
+#	print(request1)
 
 	# request/response handling of matt's arduino
-	request2 = createRequest(2)
-	sendMessage(request2, ser)
-	if cycles >= updateDelay:
-		incoming = ser.read_until("~".encode('utf-8'))
-		response2 = str(incoming.decode())
-		handleResponse(response2)
-
+#	request2 = createRequest(2)
+#	print(request2)
+#	sendMessage(request2, ser)
+#	incoming = ser.read_until("~".encode('utf-8'))
+#	response2 = str(incoming.decode())
+#	if response2 == "":
+#		empty = True
+#		print("no response")
+#	else:
+#		print (response2)
+#		empty = False
+#	if not empty and cycles >= updateDelay and response2[0]=="2":
+##		print(response2)
+#		handleResponse(response2)
+#		print("database updated")
+#	print(request2)
 	# wait another 5 seconds
-	time.sleep(5)
+#	time.sleep(2)
+
 	if cycles >= updateDelay:
 		cycles = 0
 	else:
 		cycles += 1
+	print(cycles)
 	# this cycle has finished and the loop will go again
+
+
+
