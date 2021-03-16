@@ -7,7 +7,7 @@ import time
 time.sleep(5)
 
 # intitiallizes the serial object with the connected XBee (the filepath may change depending on the port used)
-ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=10)
+ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=12)
 
 def sendMessage(message, serialObject):
 	bytesSent = serialObject.write(message.encode('utf-8'))
@@ -353,7 +353,7 @@ while listening:
 # the cycles variable will keep track of how many cycles have been made since the last database update
 cycles = 0
 # the database will be updated after *this* many cycles
-updateDelay = 20
+updateDelay = 45
 
 # this variable keeps the loop running
 running = True
@@ -374,35 +374,35 @@ while running:
 	else:
 		print(response1)
 		empty = False
-	if not empty and cycles==0 and response1[0] == "1" :
+	if not empty and (cycles==0 or cycles==5) and response1[0] == "1" :
 		print("updating")
 		handleResponse(response1)
 
 	# wait 5 seconds after
+	time.sleep(5)
 	ser.flushInput()
 	ser.flushOutput()
-	time.sleep(5)
+
 #	print(request1)
 
 	# request/response handling of matt's arduino
-#	request2 = createRequest(2)
-#	print(request2)
-#	sendMessage(request2, ser)
-#	incoming = ser.read_until("~".encode('utf-8'))
-#	response2 = str(incoming.decode())
-#	if response2 == "":
-#		empty = True
-#		print("no response")
-#	else:
-#		print (response2)
-#		empty = False
-#	if not empty and cycles >= updateDelay and response2[0]=="2":
-##		print(response2)
-#		handleResponse(response2)
-#		print("database updated")
-#	print(request2)
+	request2 = createRequest(2)
+	print(request2)
+	sendMessage(request2, ser)
+	incoming = ser.read_until("~".encode('utf-8'))
+	response2 = str(incoming.decode())
+	if response2 == "":
+		empty = True
+		print("no response")
+	else:
+		print (response2)
+		empty = False
+	if not empty and (cycles == 0 or cycles == 5) and response2[0]=="2":
+		handleResponse(response2)
+		print("updated")
+	#print(request2)
 	# wait another 5 seconds
-#	time.sleep(2)
+	time.sleep(5)
 
 	if cycles >= updateDelay:
 		cycles = 0
