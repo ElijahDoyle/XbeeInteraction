@@ -154,8 +154,8 @@ def createRequest(target):
 		p2 = str(manualControls["pump2"])
 		p3 = str(manualControls["pump3"])
 		request += "t:" + tubNum + "p:" + pause
-		request += "i:" + irPump + "1:"+ p1
-		request += "2:" + p2 + "3:" + p3
+		request += "i:" + irPump + "x:"+ p1
+		request += "y:" + p2 + "z:" + p3
 
 	return request
 
